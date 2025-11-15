@@ -78,6 +78,7 @@ function setParticleType(i,type){
     particle_grid["type"][i] = type
     particle_grid["tick"][i] = currentTick
 }
+
 const default_particle_handlers = {
     sand:(i, particle_type)=>{
             let below = i + grid_width
@@ -101,6 +102,18 @@ const default_particle_handlers = {
                     && particle_grid.tick[i] != currentTick)
                     swapParticle(i, below-1)
             }
+    },
+    dust:(i,particle_type)=>{
+        if(particle_grid["type"][i+grid_width]!=0)return default_particle_handlers.sand(i,particle_type);
+        let possible_swaps = [
+            i+1,i-1,
+            i+1,i-1,
+            i+1,i-1,
+            i+grid_width,
+            i+grid_width-1,i+grid_width+1,
+        ]
+        let swap = possible_swaps[Math.floor(Math.random()*possible_swaps.length)]
+        if(particle_grid["type"][swap]==0)swapParticle(i, swap)
     },
     water:(i,particle_type)=>{
         let below = (i+grid_width)
@@ -152,6 +165,12 @@ const particle_types = [
         color: {r:255,g:255,b:0,a:255},
         tick: [default_particle_handlers.sand],
         density:1.4
+    },
+    {
+        name:"DUST",
+        color: {r:220,g:220,b:0,a:255},
+        tick: [default_particle_handlers.dust],
+        density:0.4
     },
     {
         name:"WATR",
