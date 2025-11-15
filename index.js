@@ -1,3 +1,6 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 // Setup raylib window
 import r from 'raylib'
 
@@ -13,8 +16,7 @@ function add_telemetry(text){
     telemetry_y+=25
 }
 
-import fs from 'node:fs'
-import path from 'node:path'
+
 
 // Load textures
 const textures = new Map()
@@ -97,7 +99,7 @@ const particle_types = [
     },
     {
         name:"WOOD",
-        color: {r:168, g:98, b:50, a: 1},
+        color: {r:168, g:98, b:50, a:255},
         tick:()=>{},
         density:9999
     },
