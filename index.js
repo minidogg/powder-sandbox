@@ -13,8 +13,8 @@ function add_telemetry(text){
     telemetry_y+=25
 }
 
-import fs from 'fs'
-import path from 'path'
+import fs from 'node:fs'
+import path from 'node:path'
 
 // Load textures
 const textures = new Map()
@@ -94,6 +94,12 @@ const particle_types = [
         color: {r:0,g:0,b:0,a:0},
         tick:()=>{},
         density:0
+    },
+    {
+        name:"WOOD",
+        color: {r:168, g:98, b:50, a: 1},
+        tick:()=>{},
+        density:9999
     },
     {
         name:"SAND",
