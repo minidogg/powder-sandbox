@@ -266,15 +266,28 @@ function tick(){
 // Render loop
 const sleep = (ms)=>new Promise(r=>setTimeout(r, ms))
 let last_tick = Date.now()
+let paused = false
 while (!r.WindowShouldClose()) {
-    for(let i = 0;i<Math.floor((Date.now()-last_tick)/20);i++){
-        tick()
-        last_tick = Date.now()
+    if(!paused){
+        for(let i = 0;i<Math.floor((Date.now()-last_tick)/20);i++){
+            tick()
+            last_tick = Date.now()
+        }
     }
+
+    if(r.IsKeyPressed(r.KEY_SPACE)){
+        paused = !paused
+        if(!paused){
+            last_tick = Date.now()
+        }
+    }
+
     telemetry_y = 0
     r.BeginDrawing();
     r.ClearBackground({r:29, g:37, b:51, a: 1})
     render_particles()
+
+
 
 
     if(r.IsKeyPressed(r.KEY_RIGHT)){
