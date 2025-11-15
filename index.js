@@ -84,7 +84,6 @@ const default_particle_handlers = {
             let l = i - 1
             let r = i + 1
 
-            // bounds:
             if (below < total_particles) {
                 if (particle_types[particle_grid.type[below]]?.density < particle_type.density
                     && particle_grid.tick[i] != currentTick)
