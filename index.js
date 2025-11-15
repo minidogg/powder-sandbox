@@ -70,6 +70,14 @@ function swapParticle(from, to){
     tickParticle(from)
     tickParticle(to)
 }
+function setParticleType(i,type){
+    particle_grid["r"][i] = particle_types[type].color.r
+    particle_grid["g"][i] = particle_types[type].color.g
+    particle_grid["b"][i] = particle_types[type].color.b
+    particle_grid["a"][i] = particle_types[type].color.a
+    particle_grid["type"][i] = type
+    particle_grid["tick"][i] = currentTick
+}
 
 const default_particle_handlers = {
     sand:(i, particle_type)=>{
@@ -77,7 +85,6 @@ const default_particle_handlers = {
             let l = i - 1
             let r = i + 1
 
-            // bounds:
             if (below < total_particles) {
                 if (particle_types[particle_grid.type[below]]?.density < particle_type.density
                     && particle_grid.tick[i] != currentTick)
@@ -96,6 +103,21 @@ const default_particle_handlers = {
                     swapParticle(i, below-1)
             }
     },
+    dust:(i,particle_type,goes_up=false)=>{
+        if(particle_grid["type"][i+grid_width]!=0)return default_particle_handlers.sand(i,particle_type);
+        let possible_swaps = [
+            i+1,i-1,
+            i+1,i-1,
+            i+1,i-1,
+        ]
+        if(goes_up==true){
+            possible_swaps.push(i-grid_width,i-grid_width-1,i-grid_width+1,)
+        }else{
+            possible_swaps.push(i+grid_width,i+grid_width-1,i+grid_width+1,)
+        }
+        let swap = possible_swaps[Math.floor(Math.random()*possible_swaps.length)]
+        if(particle_grid["type"][swap]==0)swapParticle(i, swap)
+    },
     water:(i,particle_type)=>{
         let below = (i+grid_width)
         if(particle_grid["type"][below]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below)
@@ -105,50 +127,17 @@ const default_particle_handlers = {
         if(particle_grid["type"][i-1]==0&&particle_grid["tick"][i]!=currentTick&&r==0)swapParticle(i, i-1)
         if(particle_grid["type"][i+1]==0&&particle_grid["tick"][i]!=currentTick&&r==1)swapParticle(i, i+1)
     },
-    fire:(i, particle_type)=>{
-        if (particle_grid.life[i] === 0) {
-            particle_grid.life[i] = 30 + Math.floor(Math.random()*20)
-        }
-
-        particle_grid.life[i]--
-
-        if (particle_grid.life[i] <= 0) {
-            particle_grid.type[i] = 0
-            particle_grid.a[i] = 0
-            return
-        }
-
-        const neighbors = [
-            i - grid_width,
-            i + grid_width,
-            i - 1,
-            i + 1 
-        ]
-
-        for (const n of neighbors) {
-            if (n < 0 || n >= total_particles) continue
-            let t = particle_types[particle_grid.type[n]]
-            if (t?.flammable) {
-                if (Math.random() < 0.2) {
-                    particle_grid.type[n] = 2
-                    particle_grid.life[n] = 40
-                    particle_grid.r[n] = 255
-                    particle_grid.g[n] = 80
-                    particle_grid.b[n] = 10
-                    particle_grid.a[n] = 255
-                }
+    infect:(i, particle_type,ignores_flammable=true)=>{
+        if(particle_grid["tick"][i]==currentTick)return;
+        const neighbors = [i+1, i-1, i+grid_width, i-grid_width]
+        for(let neighbor of neighbors){
+            if(particle_types[particle_grid.type[neighbor]]&&particle_grid.type[neighbor]!=0&&(ignores_flammable||particle_types[particle_grid.type[neighbor]].flammable==true)){
+                setParticleType(neighbor, particle_types.indexOf(particle_type))                
             }
         }
-
-        let up = i - grid_width
-        if (up >= 0 && particle_grid.type[up] === 0 && particle_grid.tick[i] != currentTick) {
-            swapParticle(i, up)
-            return
-        }
-        let dir = Math.random() < 0.5 ? -1 : 1
-        if (particle_grid.type[i + dir] === 0 && particle_grid.tick[i] != currentTick) {
-            swapParticle(i, i + dir)
-        }
+    },
+    self_destroy: (i,particle_type)=>{
+        setParticleType(i, 0)
     }
 
 } 
@@ -158,34 +147,63 @@ const particle_types = [
     {
         name:"AIR",
         color: {r:0,g:0,b:0,a:0},
-        tick:()=>{},
+        tick:[],
         density:0
     },
     {
         name:"WOOD",
         color: {r:168, g:98, b:50, a:255},
-        tick:()=>{},
+        tick:[()=>{}],
         density:9999,
         flammable:true
     },
     {
         name:"FIRE",
         color: {r:255, g:0, b:0, a:255},
-        tick:default_particle_handlers.fire,
+        tick:[default_particle_handlers.infect, default_particle_handlers.self_destroy],
         density:9999
     },
     {
         name:"SAND",
         color: {r:255,g:255,b:0,a:255},
-        tick: default_particle_handlers.sand,
+        tick: [default_particle_handlers.sand],
         density:1.4
+    },
+    {
+        name:"DUST",
+        color: {r:220,g:220,b:0,a:255},
+        tick: [default_particle_handlers.dust],
+        density:0.4
+    },
+    {
+        name:"GAS",
+        color: {r:155, g:171, b:235,a:255},
+        tick: [(i,particle_type)=>default_particle_handlers.dust(i,particle_type, true)],
+        density:-0.1
     },
     {
         name:"WATR",
         color: {r:0,g:0,b:255,a:255},
-        tick: default_particle_handlers.water,
+        tick: [default_particle_handlers.water],
         density:1
     },
+    {
+        name:"LAVA",
+        color: {r:255,g:150,b:50,a:255},
+        tick: [default_particle_handlers.water,(i,particle_type)=>default_particle_handlers.infect(i, particle_types[particle_types.findIndex(e=>e.name=="FIRE")], false)],
+        density:2
+    },
+    {
+        name:"GGOO",
+        color: {r:100,g:100,b:100,a:255},
+        tick: [default_particle_handlers.infect],
+        density:0
+    },
+    {
+        name:"USTB",
+        color: {r:0,g:255,b:255,a:255},
+        tick: [(i,particle_type)=>Object.values(default_particle_handlers)[Math.floor(Math.random()*Object.values(default_particle_handlers).length)](i,particle_type)]
+    }
 ]
 
 
@@ -215,7 +233,7 @@ function render_particles(){
     let mtx = Math.round((r.GetMouseX()-offsetX-8)/particle_size)
     let mty =Math.round((r.GetMouseY())/particle_size)
     r.DrawRectangle(mtx*particle_size+offsetX+8, mty*particle_size, particle_size, particle_size, r.WHITE)
-    if(r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)){
+    if(!r.IsKeyDown(r.KEY_LEFT_SHIFT)&&r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)){
         let mt = (mty*grid_width)+mtx
 
         particle_grid["r"][mt] = particle_types[selected_type].color.r
@@ -238,7 +256,9 @@ function tick(){
             let i = (y*grid_width)+x
 
             let particle_type = particle_types[particle_grid["type"][i]]
-            particle_type.tick(i,particle_types[particle_grid["type"][i]])
+            for(let tick_func of particle_type.tick){
+                tick_func(i,particle_types[particle_grid["type"][i]])
+            }
         }
     }
 }
@@ -246,15 +266,46 @@ function tick(){
 // Render loop
 const sleep = (ms)=>new Promise(r=>setTimeout(r, ms))
 let last_tick = Date.now()
+let paused = false
 while (!r.WindowShouldClose()) {
-    for(let i = 0;i<Math.floor((Date.now()-last_tick)/20);i++){
-        tick()
-        last_tick = Date.now()
+    if(!paused){
+        for(let i = 0;i<Math.floor((Date.now()-last_tick)/20);i++){
+            tick()
+            last_tick = Date.now()
+        }
     }
+
+    if(r.IsKeyPressed(r.KEY_SPACE)){
+        paused = !paused
+        if(!paused){
+            last_tick = Date.now()
+        }
+    }
+    if(r.IsKeyDown(r.KEY_LEFT_SHIFT)){
+        let mouse = r.GetMousePosition()
+        let x = -100
+        let y = r.GetScreenHeight()/4
+        for(let i = 0;i<particle_types.length;i++){
+            x+=100
+            if(x>=r.GetScreenWidth()-100){
+                x = 0
+                y+=20
+            }
+            let color = particle_types[i].color
+            color.a = 255
+            r.DrawText(particle_types[i].name, x, y, 20, color)
+            if(r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)&&mouse.x>x&&mouse.x<x+100&&mouse.y>y&&mouse.y<y+20){
+                selected_type = i
+            }
+        }
+    }
+
     telemetry_y = 0
     r.BeginDrawing();
     r.ClearBackground({r:29, g:37, b:51, a: 1})
     render_particles()
+
+
 
 
     if(r.IsKeyPressed(r.KEY_RIGHT)){
@@ -263,7 +314,7 @@ while (!r.WindowShouldClose()) {
     }
     if(r.IsKeyPressed(r.KEY_LEFT)){
         selected_type--
-        if(selected_type<0)selected_type = 0
+        if(selected_type<0)selected_type = particle_types.length-1
     }
 
 
