@@ -70,7 +70,14 @@ function swapParticle(from, to){
     tickParticle(from)
     tickParticle(to)
 }
-
+function setParticleType(i,type){
+    particle_grid["r"][i] = particle_types[type].color.r
+    particle_grid["g"][i] = particle_types[type].color.g
+    particle_grid["b"][i] = particle_types[type].color.b
+    particle_grid["a"][i] = particle_types[type].color.a
+    particle_grid["type"][i] = type
+    particle_grid["tick"][i] = currentTick
+}
 const default_particle_handlers = {
     sand:(i, particle_type)=>{
             let below = i + grid_width
@@ -106,49 +113,14 @@ const default_particle_handlers = {
         if(particle_grid["type"][i+1]==0&&particle_grid["tick"][i]!=currentTick&&r==1)swapParticle(i, i+1)
     },
     fire:(i, particle_type)=>{
-        if (particle_grid.life[i] === 0) {
-            particle_grid.life[i] = 30 + Math.floor(Math.random()*20)
-        }
-
-        particle_grid.life[i]--
-
-        if (particle_grid.life[i] <= 0) {
-            particle_grid.type[i] = 0
-            particle_grid.a[i] = 0
-            return
-        }
-
-        const neighbors = [
-            i - grid_width,
-            i + grid_width,
-            i - 1,
-            i + 1 
-        ]
-
-        for (const n of neighbors) {
-            if (n < 0 || n >= total_particles) continue
-            let t = particle_types[particle_grid.type[n]]
-            if (t?.flammable) {
-                if (Math.random() < 0.2) {
-                    particle_grid.type[n] = 2
-                    particle_grid.life[n] = 40
-                    particle_grid.r[n] = 255
-                    particle_grid.g[n] = 80
-                    particle_grid.b[n] = 10
-                    particle_grid.a[n] = 255
-                }
+        const neighbors = [i+1, i-1, i+grid_width, i-grid_width]
+        for(let neighbor of neighbors){
+            if(particle_types[particle_grid.type[neighbor]].flammable==true){
+                setParticleType(neighbor, particle_types.indexOf(particle_type))                
             }
         }
 
-        let up = i - grid_width
-        if (up >= 0 && particle_grid.type[up] === 0 && particle_grid.tick[i] != currentTick) {
-            swapParticle(i, up)
-            return
-        }
-        let dir = Math.random() < 0.5 ? -1 : 1
-        if (particle_grid.type[i + dir] === 0 && particle_grid.tick[i] != currentTick) {
-            swapParticle(i, i + dir)
-        }
+        setParticleType(i, 0)
     }
 
 } 
