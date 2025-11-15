@@ -111,14 +111,16 @@ const default_particle_handlers = {
         if(particle_grid["type"][i-1]==0&&particle_grid["tick"][i]!=currentTick&&r==0)swapParticle(i, i-1)
         if(particle_grid["type"][i+1]==0&&particle_grid["tick"][i]!=currentTick&&r==1)swapParticle(i, i+1)
     },
-    fire:(i, particle_type)=>{
+    infect:(i, particle_type,ignores_flammable=true)=>{
+        if(particle_grid["tick"][i]==currentTick)return;
         const neighbors = [i+1, i-1, i+grid_width, i-grid_width]
         for(let neighbor of neighbors){
-            if(particle_types[particle_grid.type[neighbor]].flammable==true){
+            if(particle_types[particle_grid.type[neighbor]]&&particle_grid.type[neighbor]!=0&&(ignores_flammable||particle_types[particle_grid.type[neighbor]].flammable==true)){
                 setParticleType(neighbor, particle_types.indexOf(particle_type))                
             }
         }
-
+    },
+    self_destroy: (i,particle_type)=>{
         setParticleType(i, 0)
     }
 
@@ -129,33 +131,45 @@ const particle_types = [
     {
         name:"AIR",
         color: {r:0,g:0,b:0,a:0},
-        tick:()=>{},
+        tick:[()=>{}],
         density:0
     },
     {
         name:"WOOD",
         color: {r:168, g:98, b:50, a:255},
-        tick:()=>{},
+        tick:[()=>{}],
         density:9999,
         flammable:true
     },
     {
         name:"FIRE",
         color: {r:255, g:0, b:0, a:255},
-        tick:default_particle_handlers.fire,
+        tick:[default_particle_handlers.infect, default_particle_handlers.self_destroy],
         density:9999
     },
     {
         name:"SAND",
         color: {r:255,g:255,b:0,a:255},
-        tick: default_particle_handlers.sand,
+        tick: [default_particle_handlers.sand],
         density:1.4
     },
     {
         name:"WATR",
         color: {r:0,g:0,b:255,a:255},
-        tick: default_particle_handlers.water,
+        tick: [default_particle_handlers.water],
         density:1
+    },
+    {
+        name:"LAVA",
+        color: {r:255,g:150,b:50,a:255},
+        tick: [default_particle_handlers.water,(i,particle_type)=>default_particle_handlers.infect(i, particle_types[particle_types.findIndex(e=>e.name=="FIRE")], false)],
+        density:2
+    },
+    {
+        name:"GGOO",
+        color: {r:100,g:100,b:100,a:255},
+        tick: [default_particle_handlers.infect],
+        density:0
     },
 ]
 
@@ -209,7 +223,9 @@ function tick(){
             let i = (y*grid_width)+x
 
             let particle_type = particle_types[particle_grid["type"][i]]
-            particle_type.tick(i,particle_types[particle_grid["type"][i]])
+            for(let tick_func of particle_type.tick){
+                tick_func(i,particle_types[particle_grid["type"][i]])
+            }
         }
     }
 }
