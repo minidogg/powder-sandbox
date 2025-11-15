@@ -233,7 +233,7 @@ function render_particles(){
     let mtx = Math.round((r.GetMouseX()-offsetX-8)/particle_size)
     let mty =Math.round((r.GetMouseY())/particle_size)
     r.DrawRectangle(mtx*particle_size+offsetX+8, mty*particle_size, particle_size, particle_size, r.WHITE)
-    if(r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)){
+    if(!r.IsKeyDown(r.KEY_LEFT_SHIFT)&&r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)){
         let mt = (mty*grid_width)+mtx
 
         particle_grid["r"][mt] = particle_types[selected_type].color.r
@@ -281,6 +281,24 @@ while (!r.WindowShouldClose()) {
             last_tick = Date.now()
         }
     }
+    if(r.IsKeyDown(r.KEY_LEFT_SHIFT)){
+        let mouse = r.GetMousePosition()
+        let x = -100
+        let y = r.GetScreenHeight()/4
+        for(let i = 0;i<particle_types.length;i++){
+            x+=100
+            if(x>=r.GetScreenWidth()-100){
+                x = 0
+                y+=20
+            }
+            let color = particle_types[i].color
+            color.a = 255
+            r.DrawText(particle_types[i].name, x, y, 20, color)
+            if(r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)&&mouse.x>x&&mouse.x<x+100&&mouse.y>y&&mouse.y<y+20){
+                selected_type = i
+            }
+        }
+    }
 
     telemetry_y = 0
     r.BeginDrawing();
@@ -296,7 +314,7 @@ while (!r.WindowShouldClose()) {
     }
     if(r.IsKeyPressed(r.KEY_LEFT)){
         selected_type--
-        if(selected_type<0)selected_type = 0
+        if(selected_type<0)selected_type = particle_types.length-1
     }
 
 
