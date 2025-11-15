@@ -103,15 +103,18 @@ const default_particle_handlers = {
                     swapParticle(i, below-1)
             }
     },
-    dust:(i,particle_type)=>{
+    dust:(i,particle_type,goes_up=false)=>{
         if(particle_grid["type"][i+grid_width]!=0)return default_particle_handlers.sand(i,particle_type);
         let possible_swaps = [
             i+1,i-1,
             i+1,i-1,
             i+1,i-1,
-            i+grid_width,
-            i+grid_width-1,i+grid_width+1,
         ]
+        if(goes_up==true){
+            possible_swaps.push(i-grid_width,i-grid_width-1,i-grid_width+1,)
+        }else{
+            possible_swaps.push(i+grid_width,i+grid_width-1,i+grid_width+1,)
+        }
         let swap = possible_swaps[Math.floor(Math.random()*possible_swaps.length)]
         if(particle_grid["type"][swap]==0)swapParticle(i, swap)
     },
@@ -144,7 +147,7 @@ const particle_types = [
     {
         name:"AIR",
         color: {r:0,g:0,b:0,a:0},
-        tick:[()=>{}],
+        tick:[],
         density:0
     },
     {
@@ -171,6 +174,12 @@ const particle_types = [
         color: {r:220,g:220,b:0,a:255},
         tick: [default_particle_handlers.dust],
         density:0.4
+    },
+    {
+        name:"GAS",
+        color: {r:155, g:171, b:235,a:255},
+        tick: [(i,particle_type)=>default_particle_handlers.dust(i,particle_type, true)],
+        density:-0.1
     },
     {
         name:"WATR",
