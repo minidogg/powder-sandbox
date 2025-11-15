@@ -186,12 +186,15 @@ function tick(){
         }
     }
 }
-setInterval(tick, 20)
 
 // Render loop
 const sleep = (ms)=>new Promise(r=>setTimeout(r, ms))
+let last_tick = Date.now()
 while (!r.WindowShouldClose()) {
-    await sleep(0)
+    for(let i = 0;i<Math.floor((Date.now()-last_tick)/20);i++){
+        tick()
+        last_tick = Date.now()
+    }
     telemetry_y = 0
     r.BeginDrawing();
     r.ClearBackground({r:29, g:37, b:51, a: 1})
