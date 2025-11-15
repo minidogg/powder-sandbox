@@ -104,7 +104,8 @@ const default_particle_handlers = {
             }
     },
     dust:(i,particle_type,goes_up=false)=>{
-        if(particle_grid["type"][i+grid_width]!=0)return default_particle_handlers.sand(i,particle_type);
+        if(particle_grid["type"][i+grid_width]!=0&&goes_up==false)return default_particle_handlers.sand(i,particle_type);
+        if(particle_grid["type"][i-grid_width]!=0&&goes_up==true)return default_particle_handlers.sand(i,particle_type);
         let possible_swaps = [
             i+1,i-1,
             i+1,i-1,
