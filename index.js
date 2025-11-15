@@ -291,7 +291,7 @@ while (!r.WindowShouldClose()) {
                 x = 0
                 y+=20
             }
-            let color = particle_types[i].color
+            let color = structuredClone(particle_types[i].color)
             color.a = 255
             r.DrawText(particle_types[i].name, x, y, 20, color)
             if(r.IsMouseButtonDown(r.MOUSE_BUTTON_LEFT)&&mouse.x>x&&mouse.x<x+100&&mouse.y>y&&mouse.y<y+20){
