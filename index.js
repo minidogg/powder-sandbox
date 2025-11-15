@@ -53,6 +53,7 @@ add_new_particle_property("r", 0, "uint8")
 add_new_particle_property("g", 0, "uint8")
 add_new_particle_property("b", 0, "uint8")
 add_new_particle_property("a", 0, "uint8")
+add_new_particle_property("life", 0, "uint8")
 add_new_particle_property("tick", 0, "uint8")
 
 let currentTick = 0
@@ -71,42 +72,7 @@ function swapParticle(from, to){
 }
 
 const default_particle_handlers = {
-    sand:(i,particle_type)=>{
-        let below = (i+grid_width)
-        if(particle_types[particle_grid["type"][below]].density<particle_type.density&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below)
-        if(particle_types[particle_grid["type"][below+1]].density<particle_type.density&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below+1)
-        if(particle_types[particle_grid["type"][below-1]].density<particle_type.density&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below-1)
-    },
-    water:(i,particle_type)=>{
-        let below = (i+grid_width)
-        if(particle_grid["type"][below]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below)
-        if(particle_grid["type"][below+1]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below+1)
-        if(particle_grid["type"][below-1]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below-1)
-        let r = Math.round(Math.random())
-        if(particle_grid["type"][i-1]==0&&particle_grid["tick"][i]!=currentTick&&r==0)swapParticle(i, i-1)
-        if(particle_grid["type"][i+1]==0&&particle_grid["tick"][i]!=currentTick&&r==1)swapParticle(i, i+1)
-
-    }
-} 
-
-let selected_type = 2
-const particle_types = [
-    {
-        name:"AIR",
-        color: {r:0,g:0,b:0,a:0},
-        tick:()=>{},
-        density:0
-    },
-    {
-        name:"WOOD",
-        color: {r:168, g:98, b:50, a:255},
-        tick:()=>{},
-        density:9999
-    },
-    {
-        name:"SAND",
-        color: {r:255,g:255,b:0,a:255},
-        tick: (i, particle_type)=>{
+    sand:(i, particle_type)=>{
             let below = i + grid_width
             let l = i - 1
             let r = i + 1
@@ -129,7 +95,89 @@ const particle_types = [
                     && particle_grid.tick[i] != currentTick)
                     swapParticle(i, below-1)
             }
-        },
+    },
+    water:(i,particle_type)=>{
+        let below = (i+grid_width)
+        if(particle_grid["type"][below]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below)
+        if(particle_grid["type"][below+1]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below+1)
+        if(particle_grid["type"][below-1]==0&&particle_grid["tick"][i]!=currentTick)swapParticle(i, below-1)
+        let r = Math.round(Math.random())
+        if(particle_grid["type"][i-1]==0&&particle_grid["tick"][i]!=currentTick&&r==0)swapParticle(i, i-1)
+        if(particle_grid["type"][i+1]==0&&particle_grid["tick"][i]!=currentTick&&r==1)swapParticle(i, i+1)
+    },
+    fire:(i, particle_type)=>{
+        if (particle_grid.life[i] === 0) {
+            particle_grid.life[i] = 30 + Math.floor(Math.random()*20)
+        }
+
+        particle_grid.life[i]--
+
+        if (particle_grid.life[i] <= 0) {
+            particle_grid.type[i] = 0
+            particle_grid.a[i] = 0
+            return
+        }
+
+        const neighbors = [
+            i - grid_width,
+            i + grid_width,
+            i - 1,
+            i + 1 
+        ]
+
+        for (const n of neighbors) {
+            if (n < 0 || n >= total_particles) continue
+            let t = particle_types[particle_grid.type[n]]
+            if (t?.flammable) {
+                if (Math.random() < 0.2) {
+                    particle_grid.type[n] = 2
+                    particle_grid.life[n] = 40
+                    particle_grid.r[n] = 255
+                    particle_grid.g[n] = 80
+                    particle_grid.b[n] = 10
+                    particle_grid.a[n] = 255
+                }
+            }
+        }
+
+        let up = i - grid_width
+        if (up >= 0 && particle_grid.type[up] === 0 && particle_grid.tick[i] != currentTick) {
+            swapParticle(i, up)
+            return
+        }
+        let dir = Math.random() < 0.5 ? -1 : 1
+        if (particle_grid.type[i + dir] === 0 && particle_grid.tick[i] != currentTick) {
+            swapParticle(i, i + dir)
+        }
+    }
+
+} 
+
+let selected_type = 2
+const particle_types = [
+    {
+        name:"AIR",
+        color: {r:0,g:0,b:0,a:0},
+        tick:()=>{},
+        density:0
+    },
+    {
+        name:"WOOD",
+        color: {r:168, g:98, b:50, a:255},
+        tick:()=>{},
+        density:9999,
+        flammable:true
+    },
+    {
+        name:"FIRE",
+        color: {r:255, g:0, b:0, a:255},
+        tick:default_particle_handlers.fire,
+        density:9999
+    },
+    {
+        name:"SAND",
+        color: {r:255,g:255,b:0,a:255},
+        tick: default_particle_handlers.sand,
         density:1.4
     },
     {
