@@ -171,6 +171,11 @@ const particle_types = [
         tick: [default_particle_handlers.infect],
         density:0
     },
+    {
+        name:"USTB",
+        color: {r:0,g:255,b:255,a:255},
+        tick: [(i,particle_type)=>Object.values(default_particle_handlers)[Math.floor(Math.random()*Object.values(default_particle_handlers).length)](i,particle_type)]
+    }
 ]
 
 
